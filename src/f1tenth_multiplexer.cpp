@@ -58,12 +58,10 @@ class F1TenthMultiplexer : public rclcpp::Node {
 
  private:
   void joystick_callback(const AckermannDriveStamped& msg) {
-    RCLCPP_INFO(this->get_logger(), "Joystick callback");
     m_joystick_ackermann_msg = msg;
   }
 
   void gap_follow_callback(const AckermannDriveStamped& msg) {
-    RCLCPP_INFO(this->get_logger(), "Gap follow callback");
     m_gap_follow_ackermann_msg = msg;
   }
 
@@ -101,8 +99,12 @@ class F1TenthMultiplexer : public rclcpp::Node {
 
     // First use joystick control.
     if (m_joystick_ackermann_msg.has_value()) {
-      output = m_joystick_ackermann_msg.value().drive;
-      goto PUBLISH_OUTPUT;
+      AckermannDrive drive = m_joystick_ackermann_msg.value().drive;
+
+      if (std::abs(drive.speed) > 0.01 || std::abs(drive.steering_angle) > 0.01) {
+        output = drive;
+        goto PUBLISH_OUTPUT;
+      }
     }
 
     if (m_gap_follow_ackermann_msg.has_value() && m_gap_follow_enabled) {
